@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>数当て占いDX（2回まで無料体験）</title>
+<style>
+  :root {
+    --bg:#0f1220;
+    --panel:#171a2b;
+    --text:#e7eaf6;
+    --muted:#a8aecb;
+    --accent:#6ee7ff;
+    --accent2:#a78bfa;
+    --btn:#2a2f4a;
+    --good:#22c55e;
+    --bad:#ef4444;
+    --warn:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background: radial-gradient(1200px 600px at 50% -20%, #1f2341, var(--bg));
+    color:var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+    letter-spacing: .2px;
+  }
+  header{
+    text-align:center; padding:22px 16px 8px;
+  }
+  h1{margin:0; font-size:28px; font-weight:800; letter-spacing:.5px}
+  .sub{color:var(--muted); margin-top:6px}
+  main{max-width:960px; margin:0 auto; padding:16px; display:grid; gap:16px}
+  .panel{
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.08));
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:18px; padding:18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .hidden{display:none !important}
+  .center{ text-align:center }
+  .lead{font-size:18px; color:#dbe2ff}
+  .muted{color:var(--muted)}
+  .grid{ display:grid; gap:10px }
+  .grid.cards{ grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); }
+  .card{
+    background: var(--panel);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:14px; padding:12px;
+  }
+  .nums{
+    display:grid; gap:6px;
+    grid-template-columns: repeat(8, 1fr);
+    font-variant-numeric: tabular-nums;
+  }
+  .num{ 
+    padding:6px 4px; border-radius:8px; text-align:center; 
+    background:#121428; border:1px solid rgba(255,255,255,.05);
+    color:#cfe3ff;
+  }
+  .controls{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:12px}
+  button{
+    cursor:pointer; border:1px solid rgba(255,255,255,.12);
+    padding:12px 16px; border-radius:12px; background:var(--btn); color:var(--text);
+    font-weight:700; letter-spacing:.3px;
+  }
+  button.primary{ background: linear-gradient(180deg, #3c7cff, #5865f2); border-color: transparent; }
+  button.good{ background: linear-gradient(180deg, #22c55e, #16a34a); border-color: transparent;}
+  button.bad{ background: linear-gradient(180deg, #ef4444, #b91c1c); border-color: transparent;}
+  button.ghost{ background: transparent; border-color: rgba(255,255,255,.18); color:#d7ddff }
+  .tag{ display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; background:#1f2441; border:1px solid rgba(255,255,255,.08); color:#bcd0ff }
+  .pill{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:#121528; border:1px solid rgba(255,255,255,.08) }
+  .result{ font-size:48px; font-weight:900; letter-spacing: .6px; color:#fdfcff }
+  .fortune{
+    background: conic-gradient(from 200deg at 50% 120%, rgba(167,139,250,.2), rgba(110,231,255,.2), transparent 60%), var(--panel);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px; padding:14px; color:#eaf2ff;
+  }
+  .hint{ color:#9fb2ff; font-size:13px }
+  footer{ color:var(--muted); text-align:center; padding:24px 16px 40px }
+</style>
+</head>
+<body>
+<header>
+  <h1>数当て占いDX</h1>
+  <div class="sub">1〜127の好きな数字を心で決めて、「はい / いいえ」で答えるだけ。</div>
+</header>
+
+<main>
+  <!-- イントロ -->
+  <section id="intro" class="panel center">
+    <p class="lead">頭の中で <b>1〜127</b> の数字を決めてね。これから7つのカードを見せるので、<b>その数字がカードにあるか</b>を教えてください。</p>
+    <p class="muted">例: 「42」を心で決めた → カードに42が載っていれば「はい」。載っていなければ「いいえ」。</p>
+    <div class="controls">
+      <button id="startBtn" class="primary">▶ はじめる</button>
+    </div>
+    <div class="hint" style="margin-top:10px;">※ 無料体験は <b>2回</b> まで。3回目からロックされます。</div>
+  </section>
+
+  <!-- Q&A部分 -->
+  <section id="qa" class="panel hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+      <span class="pill"><span class="tag">質問</span><strong id="qIdx">1</strong>/7</span>
+      <span class="muted">あなたの数字がこのカードにありますか？</span>
+    </div>
+    <div class="grid cards" style="margin-top:12px">
+      <div class="card">
+        <div class="muted" style="margin-bottom:6px">昇順で表示</div>
+        <div id="numGrid" class="nums"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="yesBtn" class="good">はい（ある）</button>
+      <button id="noBtn" class="bad">いいえ（ない）</button>
+    </div>
+  </section>
+
+  <!-- 結果 -->
+  <section id="final" class="panel hidden center">
+    <div class="muted">あなたの数字は…</div>
+    <div id="result" class="result">-</div>
+    <div id="fortune" class="fortune" style="margin-top:14px; text-align:left"></div>
+    <div class="controls">
+      <button id="againBtn" class="ghost">もう一度あそぶ</button>
+    </div>
+  </section>
+
+  <!-- ロック画面 -->
+  <section id="locked" class="panel hidden center">
+    <p class="lead">✅ 無料体験は <b>2回</b> までです。</p>
+    <p class="muted">ここまで遊んでくれて、ありがとうございました！</p>
+    <div class="controls">
+      <button class="ghost" onclick="location.reload()">ページを更新</button>
+    </div>
+    <div class="hint">※ ブラウザを変えると回数は共有されません。</div>
+  </section>
+</main>
+
+<footer>© 数当て占いDX • 7つの質問でズバリ当てる &amp; おみくじつき</footer>
+
+<script>
+/* ==============================
+   2回だけ無料体験（回数制限）
+   ============================== */
+const FREE_PLAYS = 2;
+const TRIAL_KEY = "fortune_dx_trial_plays_v1";
+
+function getPlays(){
+  const v = localStorage.getItem(TRIAL_KEY);
+  return v ? Math.max(0, parseInt(v,10)) : 0;
+}
+function addPlayOnce(){
+  localStorage.setItem(TRIAL_KEY, String(getPlays() + 1));
+}
+function isLocked(){
+  return getPlays() >= FREE_PLAYS;
+}
+
+/* ==============================
+   要素参照
+   ============================== */
+const introSec  = document.getElementById("intro");
+const qaSec     = document.getElementById("qa");
+const finalSec  = document.getElementById("final");
+const lockedSec = document.getElementById("locked");
+
+const startBtn  = document.getElementById("startBtn");
+const yesBtn    = document.getElementById("yesBtn");
+const noBtn     = document.getElementById("noBtn");
+const againBtn  = document.getElementById("againBtn");
+
+const qIdxEl    = document.getElementById("qIdx");
+const gridEl    = document.getElementById("numGrid");
+const resultEl  = document.getElementById("result");
+const fortuneEl = document.getElementById("fortune");
+
+/* ==============================
+   ゲーム内部状態
+   ============================== */
+// 1〜127: 7ビット（2^7-1）
+const MAX_NUM = 127;
+let cardIndex = 0;      // 0..6
+let answerSum = 0;      // YESのビット合計で答えになる
+
+// 7枚の「ビットカード」を事前生成（昇順表示用）
+const CARDS = Array.from({length:7}, (_,bit)=>{
+  const nums = [];
+  for(let n=1; n<=MAX_NUM; n++){
+    if( (n & (1<<bit)) !== 0 ) nums.push(n);
+  }
+  return nums.sort((a,b)=>a-b);
+});
+
+/* ==============================
+   画面制御
+   ============================== */
+function show(el){ el.classList.remove("hidden"); }
+function hide(el){ el.classList.add("hidden"); }
+
+function renderCard(){
+  qIdxEl.textContent = String(cardIndex+1);
+  // 数字グリッド
+  const nums = CARDS[cardIndex];
+  gridEl.innerHTML = nums.map(n=>`<div class="num">${n}</div>`).join("");
+}
+
+function start(){
+  hide(introSec);
+  hide(finalSec);
+  show(qaSec);
+  cardIndex = 0;
+  answerSum = 0;
+  renderCard();
+}
+
+function onYes(){
+  // 現在カードのビットを加算
+  answerSum |= (1<<cardIndex);
+  next();
+}
+function onNo(){
+  next();
+}
+
+function next(){
+  cardIndex++;
+  if(cardIndex < 7){
+    renderCard();
+  }else{
+    finish();
+  }
+}
+
+function finish(){
+  hide(qaSec);
+  show(finalSec);
+
+  // 計算結果
+  const guessed = answerSum;
+  resultEl.textContent = guessed;
+
+  // 占いメッセージ
+  fortuneEl.innerHTML = buildFortune(guessed);
+
+  // ★ ここで1プレイ消費（カウント加算）
+  addPlayOnce();
+}
+
+/* ==============================
+   占いメッセージ（例）
+   ============================== */
+function buildFortune(n){
+  // 簡易的に数字に基づくおみくじ
+  const luckIdx = n % 6; // 0..5
+  const colors = ["青","紫","緑","赤","金","白"];
+  const items  = ["ペン","水","名刺","スマホ","ハンカチ","メモ帳"];
+  const actions= ["整理整頓","深呼吸","早寝","運動","連絡","感謝"];
+
+  const fortunes = [
+    { title:"大吉", body:"思い切った一歩が好転のカギ。直感を信じて行動しよう。", hint:"午前中にひと仕事片づけると運気UP。" },
+    { title:"中吉", body:"ペース配分が吉。焦らず、でも止まらずがポイント。", hint:"メールの返信を丁寧に。信頼度UP。" },
+    { title:"小吉", body:"小さな改善が積み重なって大きな成果に。習慣化を。", hint:"タスクを3つだけ選んで完了させよう。" },
+    { title:"吉",   body:"身近な協力者に恵まれる兆し。相談すると道が開ける。", hint:"『ありがとう』を1回多く伝えよう。" },
+    { title:"末吉", body:"準備がすべて。下調べとメモでミスを防げそう。",       hint:"前日夜の10分準備で当日の効率UP。" },
+    { title:"凶(回避可)", body:"予定が崩れても柔軟に。やり方を変えれば問題なし。", hint:"やりにくい作業は15分だけやってみる。" },
+  ];
+
+  const f = fortunes[luckIdx];
+  const color  = colors[n % colors.length];
+  const item   = items[(n*7) % items.length];
+  const action = actions[(n*11) % actions.length];
+
+  return `
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px">
+      <span class="tag">今日の運勢</span>
+      <strong style="font-size:18px">${f.title}</strong>
+    </div>
+    <div style="margin:6px 0 8px">${f.body}</div>
+    <ul style="margin:0; padding-left:18px">
+      <li><b>ラッキーナンバー:</b> ${n}</li>
+      <li><b>ラッキーカラー:</b> ${color}</li>
+      <li><b>持つと良い物:</b> ${item}</li>
+      <li><b>行動ヒント:</b> ${action}（${f.hint}）</li>
+    </ul>
+  `;
+}
+
+/* ==============================
+   イベント
+   ============================== */
+startBtn.addEventListener("click", () => isLocked() ? showLock() : start());
+yesBtn  .addEventListener("click", onYes);
+noBtn   .addEventListener("click", onNo);
+againBtn.addEventListener("click", () => isLocked() ? showLock() : restart());
+
+function restart(){
+  // ページを再読込すると回数は増えない（finishでのみ加算）
+  location.reload();
+}
+
+/* ==============================
+   ロック画面制御
+   ============================== */
+function showLock(){
+  hide(introSec);
+  hide(qaSec);
+  hide(finalSec);
+  show(lockedSec);
+  if(startBtn){
+    startBtn.disabled = true;
+    startBtn.classList.add("ghost");
+  }
+}
+
+// ページ表示時点でロックなら、最初からロック画面を出す
+if (isLocked()){
+  showLock();
+}
+</script>
+</body>
+</html>
